@@ -1,0 +1,85 @@
+---
+title: "ANOVA APPLICATION"
+output: html_document
+---
+
+## Objective:
+The main objective of this work is to applied ANOVA test to explore the effect of three types of diet on losing weight.
+The data we have is from **kaggle** website  https://www.kaggle.com/zaranadoshi/anova-diet
+
+```{r}
+library(tidyverse)
+
+```
+First, we should import data
+
+```{r}
+DataDiet=read.csv("~/Documents/master/s3/ANOVA/Diet.csv")
+head(DataDiet)
+```
+
+We now create a new variable **weightlost = weight - weight6week** that indicating weight lost after 6 weeks of taking diet (a, b or c) in both men and women
+
+
+```{r}
+DataDiet=DataDiet %>% mutate(weightLost=weight-weight6weeks) %>% select(-3,-4)
+head(DataDiet)
+```
+
+Let's create a linear model that predicts weight loss based on diet and gender
+```{r}
+model=lm(weightLost~Diet*gender,data=DataDiet)
+residus=residuals(model)
+```
+## Checking the conditions for applying  ANOVA
+
+### shapiro test to check normality.
+The null hypothesis of this test is that the population comes from a normal distribution
+
+```{r}
+shapiro.test(residus)
+```
+Since the p-value is greater than alpha > 5%, so we accept the null hypothesis.\\
+
+We can also check the normality graphically using the histogram
+
+```{r}
+hist(residus,prob='T')
+curve(dnorm(x,mean(residus),sd(residus)),add=T,col="red")
+
+```
+
+### homocedacité test
+The null hypothesis of this test is that the variance is the same in all samples.
+```{r}
+bartlett.test(residus~Diet,data=DataDiet)
+bartlett.test(residus~gender,data=DataDiet)
+
+```
+We also accept the null hypothesis for both cases because the p-values are above the 5% range.
+
+**Since the conditions are satisfied, we can apply the anova method on our data**
+
+### anova table
+```{r}
+anova(model)
+```
+The results of the **ANOVA** table means that the Diet variable is the only one that has an effect on weight loss, and there is no interaction between diet and gender variables
+
+
+### Tukey test
+
+We will now see which type of Diet is better for weight loss
+```{r}
+mod=aov(weightLost~Diet*gender,data=DataDiet)
+TukeyHSD(mod,"Diet")
+```
+According to the results of calculations there is a significant deference between **C modality** and others
+
+
+```{r}
+plot(DataDiet$Diet,DataDiet$weightLost)
+```
+
+**Conclusion**
+The most suitable diet for losing weight is the C diet.
